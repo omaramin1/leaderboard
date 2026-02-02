@@ -1,9 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Polygon, GeoJSON } from 'react-leaflet';
+import { useEffect, useState, useMemo } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup, Polygon, GeoJSON, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import ControlPanel from './ControlPanel';
+
+// Zoom Handler Component
+function ZoomHandler({ setZoom }: { setZoom: (z: number) => void }) {
+    useMapEvents({
+        zoomend: (e) => {
+            setZoom(e.target.getZoom());
+        }
+    });
+    return null;
+}
 
 // Types
 type SalesRecord = {
@@ -20,6 +30,7 @@ export default function MapComponent() {
     const [blueZones, setBlueZones] = useState<any>(null);
     const [censusData, setCensusData] = useState<any>(null);
     const [rankedAreas, setRankedAreas] = useState<any[]>([]);
+    const [currentZoom, setCurrentZoom] = useState(9);
 
     // Toggles
     const [showSales, setShowSales] = useState(true);
@@ -31,13 +42,23 @@ export default function MapComponent() {
 
     useEffect(() => {
         // Load Static Data
-        fetch('/data/sales.json').then(r => r.json()).then(setSalesData).catch(console.error);
-        fetch('/data/blue_zones.geojson').then(r => r.json()).then(setBlueZones).catch(console.error);
-        fetch('/data/census_stats.geojson').then(r => r.json()).then(setCensusData).catch(console.error);
-        fetch('/data/sales.json').then(r => r.json()).then(setSalesData).catch(console.error);
-        fetch('/data/blue_zones.geojson').then(r => r.json()).then(setBlueZones).catch(console.error);
-        fetch('/data/census_stats.geojson').then(r => r.json()).then(setCensusData).catch(console.error);
-        fetch('/data/ranked_clusters.json').then(r => r.json()).then(setRankedAreas).catch(console.error);
+        const loadData = async () => {
+            try {
+                const [sales, zones, census, ranks] = await Promise.all([
+                    fetch('/data/sales.json').then(r => r.json()),
+                    fetch('/data/blue_zones.geojson').then(r => r.json()),
+                    fetch('/data/census_stats.geojson').then(r => r.json()),
+                    fetch('/data/ranked_clusters.json').then(r => r.json())
+                ]);
+                setSalesData(sales);
+                setBlueZones(zones);
+                setCensusData(census);
+                setRankedAreas(ranks);
+            } catch (e) {
+                console.error("Failed to load map data:", e);
+            }
+        };
+        loadData();
     }, []);
 
     // Styles
@@ -90,6 +111,9 @@ export default function MapComponent() {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
+
+                <ZoomHandler setZoom={setCurrentZoom} />
+
                 {/* Dominion Layer */}
                 {showDominion && (
                     <Polygon
@@ -113,63 +137,95 @@ export default function MapComponent() {
                     <GeoJSON data={censusData} style={raceStyle} />
                 )}
 
-                {/* Sales Markers */}
-                {showSales && salesData.map((sale, idx) => (
-                    <CircleMarker
-                        key={`sale-${idx}`}
-                        center={[sale.Latitude, sale.Longitude]}
-                        radius={3}
-                        pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.8 }}
-                    >
-                        <Popup>
-                            <div className="text-slate-900">
-                                <strong>{sale.Customer_A}</strong><br />
-                                {sale.City}, {sale.State}<br />
-                                {sale.Sale_Date}
-                            </div>
-                        </Popup>
-                    </CircleMarker>
-                ))}
+                {/* Sales Markers - Zoom Dependent (Visible only when zoomed in > 13) */}
+                {useMemo(() => (
+                    showSales && currentZoom > 13 && salesData.map((sale, idx) => (
+                        <CircleMarker
+                            key={`sale-${idx}`}
+                            center={[sale.Latitude, sale.Longitude]}
+                            radius={4}
+                            pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.8 }}
+                        >
+                            <Popup>
+                                <div className="text-slate-900">
+                                    <strong>{sale.Customer_A}</strong><br />
+                                    {sale.City}, {sale.State}<br />
+                                    {sale.Sale_Date}
+                                </div>
+                            </Popup>
+                        </CircleMarker>
+                    ))
+                ), [showSales, salesData, currentZoom])}
 
                 {/* Ranked Area Pins */}
                 {showRankings && rankedAreas.map((area, idx) => (
-                    <CircleMarker
-                        key={`rank-${idx}`}
-                        center={[area.lat, area.lng]}
-                        radius={10} // Larger for emphasis
-                        pathOptions={{
-                            color: '#8b5cf6', // Indigo/Purple
-                            fillColor: '#8b5cf6',
-                            fillOpacity: 0.9,
-                            weight: 2,
-                            opacity: 1
-                        }}
-                    >
-                        <Popup>
-                            <div className="text-slate-900 min-w-[200px]">
-                                <h3 className="font-bold text-lg border-b pb-1 mb-2">Rank #{area.rank}</h3>
-                                <div className="text-sm space-y-1">
-                                    <div className={`px-2 py-1 rounded text-white text-center font-bold mb-2 ${area.in_zone ? 'bg-emerald-600' : 'bg-slate-400'}`}>
-                                        {area.in_zone ? 'QUALIFIED ZONE' : 'Out of Zone'}
-                                    </div>
-                                    <p><strong>Saturation:</strong> {area.size} Homes</p>
-                                    <p><strong>Benefit Score:</strong> {area.score}/100</p>
-                                    <p className="text-xs text-slate-500 mt-1">{area.tract}</p>
+                    <div key={`rank-${idx}`}>
+                        {/* Territory Polygon - OUTLINE focused */}
+                        {area.polygon && (
+                            <Polygon
+                                positions={area.polygon}
+                                pathOptions={{
+                                    color: '#7c3aed', // More vibrant violet
+                                    weight: 4,        // Thicker outline for better visibility
+                                    opacity: 1,       // Fully solid stroke
+                                    fillColor: '#8b5cf6',
+                                    fillOpacity: 0.15, // Slightly more fill to see the "zone"
+                                    dashArray: '5, 5'
+                                }}
+                            >
+                                <Popup>
+                                    <div className="text-slate-900 min-w-[200px]">
+                                        <h3 className="font-bold text-lg border-b pb-1 mb-2">Rank #{area.rank}</h3>
 
-                                    <div className="grid grid-cols-2 gap-2 mt-2 bg-slate-100 p-2 rounded">
-                                        <div>
-                                            <span className="text-xs text-slate-500">SNAP Rate</span><br />
-                                            <span className="font-medium">{area.snap_rate}%</span>
+                                        {/* kWh Potential Badge */}
+                                        <div className="mb-3 p-2 bg-gradient-to-r from-slate-100 to-slate-200 rounded">
+                                            <p className="text-xs font-bold text-slate-500 uppercase">Est. kWh Potential</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`text-xl font-bold ${area.score >= 80 ? 'text-emerald-600' : area.score >= 50 ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                    {area.score >= 80 ? 'HIGH' : area.score >= 50 ? 'MODERATE' : 'LOW'}
+                                                </span>
+                                                <span className="text-xs text-slate-500">({area.score}/100)</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span className="text-xs text-slate-500">Medicaid</span><br />
-                                            <span className="font-medium">{area.medicaid_rate}%</span>
+
+                                        <div className="text-sm space-y-1">
+                                            <div className={`px-2 py-1 rounded text-white text-center font-bold mb-2 ${area.in_zone ? 'bg-emerald-600' : 'bg-slate-400'}`}>
+                                                {area.in_zone ? 'QUALIFIED ZONE' : 'Out of Zone'}
+                                            </div>
+
+                                            {/* Demographics Grid */}
+                                            {area.demographics && (
+                                                <div className="grid grid-cols-2 gap-2 my-2 text-xs">
+                                                    <div className="bg-slate-50 p-1 rounded">
+                                                        <span className="text-slate-400">Avg Age</span>
+                                                        <div className="font-medium text-slate-700">{area.demographics.age} yrs</div>
+                                                    </div>
+                                                    <div className="bg-slate-50 p-1 rounded">
+                                                        <span className="text-slate-400">HH Size</span>
+                                                        <div className="font-medium text-slate-700">{area.demographics.hh_size} ppl</div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <p><strong>Saturation:</strong> {area.size} Homes</p>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                        </Popup>
-                    </CircleMarker>
+                                </Popup>
+                            </Polygon>
+                        )}
+
+                        {/* Center Marker (Optional, mostly for low zooms) */}
+                        <CircleMarker
+                            center={[area.lat, area.lng]}
+                            radius={4}
+                            pathOptions={{
+                                color: '#8b5cf6',
+                                fillColor: '#fff',
+                                fillOpacity: 1,
+                                weight: 2
+                            }}
+                        />
+                    </div>
                 ))}
 
             </MapContainer>
