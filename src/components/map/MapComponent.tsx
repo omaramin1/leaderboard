@@ -30,6 +30,7 @@ export default function MapComponent() {
     const [blueZones, setBlueZones] = useState<any>(null);
     const [censusData, setCensusData] = useState<any>(null);
     const [rankedAreas, setRankedAreas] = useState<any[]>([]);
+    const [ourDeals, setOurDeals] = useState<any[]>([]);
     const [currentZoom, setCurrentZoom] = useState(9);
 
     // Toggles
@@ -44,18 +45,21 @@ export default function MapComponent() {
         // Load Static Data
         const loadData = async () => {
             try {
-                const [sales, zones, census, ranks] = await Promise.all([
+                const [sales, zones, census, ranks, deals] = await Promise.all([
                     fetch('/data/sales.json').then(r => r.json()),
                     fetch('/data/blue_zones.geojson').then(r => r.json()),
                     fetch('/data/census_stats.geojson').then(r => r.json()),
-                    fetch('/data/ranked_clusters.json').then(r => r.json())
+                    fetch('/data/ranked_clusters.json').then(r => r.json()),
+                    fetch('/data/our_deals.json').then(r => r.json()).catch(() => [])
                 ]);
+
                 setSalesData(sales);
                 setBlueZones(zones);
                 setCensusData(census);
                 setRankedAreas(ranks);
-            } catch (e) {
-                console.error("Failed to load map data:", e);
+                setOurDeals(deals);
+            } catch (error) {
+                console.error("Error loading map data:", error);
             }
         };
         loadData();
@@ -137,25 +141,46 @@ export default function MapComponent() {
                     <GeoJSON data={censusData} style={raceStyle} />
                 )}
 
-                {/* Sales Markers - Zoom Dependent (Visible only when zoomed in > 13) */}
+                {/* Old Sales Markers (Big List) - Orange */}
                 {useMemo(() => (
                     showSales && currentZoom > 13 && salesData.map((sale, idx) => (
                         <CircleMarker
                             key={`sale-${idx}`}
                             center={[sale.Latitude, sale.Longitude]}
                             radius={4}
-                            pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 0.8 }}
+                            pathOptions={{ color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8 }}
                         >
                             <Popup>
                                 <div className="text-slate-900">
                                     <strong>{sale.Customer_A}</strong><br />
                                     {sale.City}, {sale.State}<br />
-                                    {sale.Sale_Date}
+                                    <span className="text-xs text-slate-500">Historical Sale</span>
                                 </div>
                             </Popup>
                         </CircleMarker>
                     ))
                 ), [showSales, salesData, currentZoom])}
+
+                {/* Our Deals (Short List) - Green */}
+                {/* Always visible regardless of zoom because it's a short list */}
+                {useMemo(() => (
+                    showSales && ourDeals.map((deal, idx) => (
+                        <CircleMarker
+                            key={`deal-${idx}`}
+                            center={[deal.Latitude, deal.Longitude]}
+                            radius={6}
+                            pathOptions={{ color: '#22c55e', fillColor: '#22c55e', fillOpacity: 1 }}
+                        >
+                            <Popup>
+                                <div className="text-slate-900">
+                                    <strong>{deal.Customer_A}</strong><br />
+                                    {deal.City}, {deal.State}<br />
+                                    <span className="text-xs font-bold text-emerald-600">Active Deal</span>
+                                </div>
+                            </Popup>
+                        </CircleMarker>
+                    ))
+                ), [showSales, ourDeals])}
 
                 {/* Ranked Area Pins */}
                 {showRankings && rankedAreas.filter(area => area.in_zone || (area.benefit_likelihood >= 0.4)).map((area, idx) => {
