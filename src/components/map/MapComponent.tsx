@@ -143,7 +143,7 @@ export default function MapComponent() {
 
                 {/* Old Sales Markers (Big List) - Orange */}
                 {useMemo(() => (
-                    showSales && currentZoom > 13 && salesData.map((sale, idx) => (
+                    showSales && currentZoom >= 10 && salesData.map((sale, idx) => (
                         <CircleMarker
                             key={`sale-${idx}`}
                             center={[sale.Latitude, sale.Longitude]}
