@@ -158,7 +158,8 @@ export default function MapComponent() {
                 ), [showSales, salesData, currentZoom])}
 
                 {/* Ranked Area Pins */}
-                {showRankings && rankedAreas.map((area, idx) => (
+                {/* User Request: Only show pins inside the LMI Auto-Qualify Zone (Blue Zone) */}
+                {showRankings && rankedAreas.filter(area => area.in_zone).map((area, idx) => (
                     <div key={`rank-${idx}`}>
                         {/* Territory Polygon - OUTLINE focused */}
                         {area.polygon && (
