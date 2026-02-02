@@ -158,76 +158,80 @@ export default function MapComponent() {
                 ), [showSales, salesData, currentZoom])}
 
                 {/* Ranked Area Pins */}
-                {/* User Request: Show Auto-Qualify Zone OR Areas with > 40% Benefit Likelihood */}
-                {showRankings && rankedAreas.filter(area => area.in_zone || (area.benefit_likelihood >= 0.4)).map((area, idx) => (
-                    <div key={`rank-${idx}`}>
-                        {/* Territory Polygon - OUTLINE focused */}
-                        {area.polygon && (
-                            <Polygon
-                                positions={area.polygon}
-                                pathOptions={{
-                                    color: '#7c3aed', // More vibrant violet
-                                    weight: 4,        // Thicker outline for better visibility
-                                    opacity: 1,       // Fully solid stroke
-                                    fillColor: '#8b5cf6',
-                                    fillOpacity: 0.15, // Slightly more fill to see the "zone"
-                                    dashArray: '5, 5'
-                                }}
-                            >
-                                <Popup>
-                                    <div className="text-slate-900 min-w-[200px]">
-                                        <h3 className="font-bold text-lg border-b pb-1 mb-2">Rank #{area.rank}</h3>
+                {showRankings && rankedAreas.filter(area => area.in_zone || (area.benefit_likelihood >= 0.4)).map((area, idx) => {
+                    const isTier2 = !area.in_zone;
+                    const areaColor = isTier2 ? '#ca8a04' : '#7c3aed'; // Yellow-600 for Tier 2, Violet-600 for Tier 1
 
-                                        {/* kWh Potential Badge */}
-                                        <div className="mb-3 p-2 bg-gradient-to-r from-slate-100 to-slate-200 rounded">
-                                            <p className="text-xs font-bold text-slate-500 uppercase">Est. kWh Potential</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className={`text-xl font-bold ${area.score >= 80 ? 'text-emerald-600' : area.score >= 50 ? 'text-amber-600' : 'text-slate-600'}`}>
-                                                    {area.score >= 80 ? 'HIGH' : area.score >= 50 ? 'MODERATE' : 'LOW'}
-                                                </span>
-                                                <span className="text-xs text-slate-500">({area.score}/100)</span>
-                                            </div>
-                                        </div>
+                    return (
+                        <div key={`rank-${idx}`}>
+                            {/* Territory Polygon - OUTLINE focused */}
+                            {area.polygon && (
+                                <Polygon
+                                    positions={area.polygon}
+                                    pathOptions={{
+                                        color: areaColor,
+                                        weight: 4,
+                                        opacity: 1,
+                                        fillColor: areaColor,
+                                        fillOpacity: 0.15,
+                                        dashArray: '5, 5'
+                                    }}
+                                >
+                                    <Popup>
+                                        <div className="text-slate-900 min-w-[200px]">
+                                            <h3 className="font-bold text-lg border-b pb-1 mb-2">Rank #{area.rank}</h3>
 
-                                        <div className="text-sm space-y-1">
-                                            <div className={`px-2 py-1 rounded text-white text-center font-bold mb-2 ${area.in_zone ? 'bg-emerald-600' : 'bg-amber-500'}`}>
-                                                {area.in_zone ? 'AUTO-QUALIFY ZONE' : `Likely Qualify (${Math.round(area.benefit_likelihood * 100)}%)`}
-                                            </div>
-
-                                            {/* Demographics Grid */}
-                                            {area.demographics && (
-                                                <div className="grid grid-cols-2 gap-2 my-2 text-xs">
-                                                    <div className="bg-slate-50 p-1 rounded">
-                                                        <span className="text-slate-400">Avg Age</span>
-                                                        <div className="font-medium text-slate-700">{area.demographics.age} yrs</div>
-                                                    </div>
-                                                    <div className="bg-slate-50 p-1 rounded">
-                                                        <span className="text-slate-400">HH Size</span>
-                                                        <div className="font-medium text-slate-700">{area.demographics.hh_size} ppl</div>
-                                                    </div>
+                                            {/* kWh Potential Badge */}
+                                            <div className="mb-3 p-2 bg-gradient-to-r from-slate-100 to-slate-200 rounded">
+                                                <p className="text-xs font-bold text-slate-500 uppercase">Est. kWh Potential</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-xl font-bold ${area.score >= 80 ? 'text-emerald-600' : area.score >= 50 ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                        {area.score >= 80 ? 'HIGH' : area.score >= 50 ? 'MODERATE' : 'LOW'}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500">({area.score}/100)</span>
                                                 </div>
-                                            )}
+                                            </div>
 
-                                            <p><strong>Saturation:</strong> {area.size} Homes</p>
+                                            <div className="text-sm space-y-1">
+                                                <div className={`px-2 py-1 rounded text-white text-center font-bold mb-2 ${area.in_zone ? 'bg-emerald-600' : 'bg-amber-500'}`}>
+                                                    {area.in_zone ? 'AUTO-QUALIFY ZONE' : `Likely Qualify (${Math.round(area.benefit_likelihood * 100)}%)`}
+                                                </div>
+
+                                                {/* Demographics Grid */}
+                                                {area.demographics && (
+                                                    <div className="grid grid-cols-2 gap-2 my-2 text-xs">
+                                                        <div className="bg-slate-50 p-1 rounded">
+                                                            <span className="text-slate-400">Avg Age</span>
+                                                            <div className="font-medium text-slate-700">{area.demographics.age} yrs</div>
+                                                        </div>
+                                                        <div className="bg-slate-50 p-1 rounded">
+                                                            <span className="text-slate-400">HH Size</span>
+                                                            <div className="font-medium text-slate-700">{area.demographics.hh_size} ppl</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                <p><strong>Saturation:</strong> {area.size} Homes</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </Popup>
-                            </Polygon>
-                        )}
+                                    </Popup>
+                                </Polygon>
+                            )}
 
-                        {/* Center Marker (Optional, mostly for low zooms) */}
-                        <CircleMarker
-                            center={[area.lat, area.lng]}
-                            radius={4}
-                            pathOptions={{
-                                color: '#8b5cf6',
-                                fillColor: '#fff',
-                                fillOpacity: 1,
-                                weight: 2
-                            }}
-                        />
-                    </div>
-                ))}
+                            {/* Center Marker (Optional, mostly for low zooms) */}
+                            <CircleMarker
+                                center={[area.lat, area.lng]}
+                                radius={4}
+                                pathOptions={{
+                                    color: areaColor,
+                                    fillColor: '#fff',
+                                    fillOpacity: 1,
+                                    weight: 2
+                                }}
+                            />
+                        </div>
+                    );
+                })}
 
             </MapContainer>
 
