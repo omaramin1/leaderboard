@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Area Planning Map App (Web Version)
 
-## Getting Started
+This is a premium, Vercel-ready web application built with **Next.js** and **React-Leaflet**. It replaces the previous Streamlit prototype with a modern, responsive layout.
 
-First, run the development server:
+## Live Deployment
+
+**URL**: [https://web-app-lake-five.vercel.app](https://web-app-lake-five.vercel.app)
+
+## Features
+
+- **Full-Screen Map**: Dark mode map with high-performance rendering.
+- **Floating Command Center**: Toggle layers (Sales, Blue Zones, Dominion, Income, **Race Demographics**).
+- **Vercel Data Architecture**: Data is pre-processed into static JSONs for instant loading (no backend required).
+- **Mobile Responsive**: Works on phone, tablet, and desktop.
+
+## Project Structure
+
+- `web-app/src/app/page.tsx`: Main entry point.
+- `web-app/src/components/map/`: Map logic (`MapComponent.tsx`).
+- `web-app/public/data/`: Static JSON data files (Sales, Blue Zones, Census).
+
+## How to Push to GitHub
+
+I have already initialized the Git repository and committed the code locally.
+
+### Magic "Bypass" Command
+
+If you are logged into GitHub Desktop but the terminal still asks for a login, run this command once to sync them:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git config --global credential.helper osxkeychain
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Option A: Using GitHub Desktop (Recommended)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Since you are signed in to GitHub Desktop:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Open GitHub Desktop.
+2. Go to **File** > **Add Local Repository**.
+3. Navigate to and select the `web-app` folder inside `emg-field-ops`.
+    - Path: `/Users/hannahboyer/.gemini/antigravity/scratch/emg-field-ops/web-app`
+4. Click **Add Repository**.
+5. Click **Publish repository** in the top bar.
 
-## Learn More
+6. **Create a new Repository** on GitHub (do not initialize with README/license).
+7. Run the following commands in your terminal:
 
-To learn more about Next.js, take a look at the following resources:
+    ```bash
+    cd web-app
+    git remote add origin <YOUR_GITHUB_REPO_URL>
+    git branch -M main
+    git push -u origin main
+    ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Local Development
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To run locally:
 
-## Deploy on Vercel
+```bash
+cd web-app
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Open [http://localhost:3000](http://localhost:3000).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Data Updates
+
+If you get new sales data or extracted streets:
+
+1. Place updated files in the root folder (`emg-field-ops`).
+2. Run the processor script:
+
+    ```bash
+    python data_processor.py
+    ```
+
+3. Commit and push the updated `public/data` files to GitHub. Vercel will auto-redeploy.
