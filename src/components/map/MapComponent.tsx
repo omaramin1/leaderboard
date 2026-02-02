@@ -158,8 +158,8 @@ export default function MapComponent() {
                 ), [showSales, salesData, currentZoom])}
 
                 {/* Ranked Area Pins */}
-                {/* User Request: Only show pins inside the LMI Auto-Qualify Zone (Blue Zone) */}
-                {showRankings && rankedAreas.filter(area => area.in_zone).map((area, idx) => (
+                {/* User Request: Show Auto-Qualify Zone OR Areas with > 40% Benefit Likelihood */}
+                {showRankings && rankedAreas.filter(area => area.in_zone || (area.benefit_likelihood >= 0.4)).map((area, idx) => (
                     <div key={`rank-${idx}`}>
                         {/* Territory Polygon - OUTLINE focused */}
                         {area.polygon && (
@@ -190,8 +190,8 @@ export default function MapComponent() {
                                         </div>
 
                                         <div className="text-sm space-y-1">
-                                            <div className={`px-2 py-1 rounded text-white text-center font-bold mb-2 ${area.in_zone ? 'bg-emerald-600' : 'bg-slate-400'}`}>
-                                                {area.in_zone ? 'QUALIFIED ZONE' : 'Out of Zone'}
+                                            <div className={`px-2 py-1 rounded text-white text-center font-bold mb-2 ${area.in_zone ? 'bg-emerald-600' : 'bg-amber-500'}`}>
+                                                {area.in_zone ? 'AUTO-QUALIFY ZONE' : `Likely Qualify (${Math.round(area.benefit_likelihood * 100)}%)`}
                                             </div>
 
                                             {/* Demographics Grid */}
