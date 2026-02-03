@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Polygon, GeoJSON, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Polygon, GeoJSON, useMapEvents, LayersControl } from 'react-leaflet';
+import MarkerClusterGroup from './MarkerClusterGroup';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import ControlPanel from './ControlPanel';
 
 // Zoom Handler Component
@@ -32,6 +35,7 @@ export default function MapComponent() {
     const [rankedAreas, setRankedAreas] = useState<any[]>([]);
     const [ourDeals, setOurDeals] = useState<any[]>([]);
     const [currentZoom, setCurrentZoom] = useState(9);
+    const [salesFilter, setSalesFilter] = useState('all');
 
     // Toggles
     const [showSales, setShowSales] = useState(true);
@@ -97,6 +101,26 @@ export default function MapComponent() {
         fillOpacity: 0
     };
 
+    // Filter Logic
+    const filteredSales = useMemo(() => {
+        if (salesFilter === 'all') return salesData;
+
+        const cutoffDate = new Date();
+        cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
+
+        return salesData.filter(sale => {
+            if (!sale.Sale_Date) return false;
+            const saleDate = new Date(sale.Sale_Date);
+            if (isNaN(saleDate.getTime())) return false; // Invalid date
+
+            if (salesFilter === 'recent') {
+                return saleDate >= cutoffDate;
+            } else {
+                return saleDate < cutoffDate;
+            }
+        });
+    }, [salesData, salesFilter]);
+
     // Dominion Placeholder (Richmond area box)
     const dominionPoly = [
         [37.4, -77.6], [37.7, -77.6], [37.7, -77.3], [37.4, -77.3]
@@ -110,10 +134,28 @@ export default function MapComponent() {
                 style={{ height: '100%', width: '100%', background: '#cbd5e1' }}
                 zoomControl={false}
             >
-                <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+                <LayersControl position="topright">
+                    <LayersControl.BaseLayer checked name="Street View">
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                    </LayersControl.BaseLayer>
+
+                    <LayersControl.BaseLayer name="Satellite (Esri)">
+                        <TileLayer
+                            attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                        />
+                    </LayersControl.BaseLayer>
+
+                    <LayersControl.BaseLayer name="Dark Mode">
+                        <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                        />
+                    </LayersControl.BaseLayer>
+                </LayersControl>
 
 
                 <ZoomHandler setZoom={setCurrentZoom} />
@@ -141,25 +183,27 @@ export default function MapComponent() {
                     <GeoJSON data={censusData} style={raceStyle} />
                 )}
 
-                {/* Old Sales Markers (Big List) - Orange */}
-                {useMemo(() => (
-                    showSales && currentZoom >= 10 && salesData.map((sale, idx) => (
-                        <CircleMarker
-                            key={`sale-${idx}`}
-                            center={[sale.Latitude, sale.Longitude]}
-                            radius={4}
-                            pathOptions={{ color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8 }}
-                        >
-                            <Popup>
-                                <div className="text-slate-900">
-                                    <strong>{sale.Customer_A}</strong><br />
-                                    {sale.City}, {sale.State}<br />
-                                    <span className="text-xs text-slate-500">Historical Sale</span>
-                                </div>
-                            </Popup>
-                        </CircleMarker>
-                    ))
-                ), [showSales, salesData, currentZoom])}
+                {/* Old Sales Markers (Big List) - Orange - CLUSTERED */}
+                {showSales && (
+                    <MarkerClusterGroup>
+                        {filteredSales.map((sale, idx) => (
+                            <CircleMarker
+                                key={`sale-${idx}`}
+                                center={[sale.Latitude, sale.Longitude]}
+                                radius={4}
+                                pathOptions={{ color: '#f97316', fillColor: '#f97316', fillOpacity: 0.8 }}
+                            >
+                                <Popup>
+                                    <div className="text-slate-900">
+                                        <strong>{sale.Customer_A}</strong><br />
+                                        {sale.City}, {sale.State}<br />
+                                        <span className="text-xs text-slate-500">Historical Sale</span>
+                                    </div>
+                                </Popup>
+                            </CircleMarker>
+                        ))}
+                    </MarkerClusterGroup>
+                )}
 
                 {/* Our Deals (Short List) - Green */}
                 {/* Always visible regardless of zoom because it's a short list */}
@@ -192,7 +236,7 @@ export default function MapComponent() {
                             {/* Territory Polygon - OUTLINE focused */}
                             {area.polygon && (
                                 <Polygon
-                                    positions={area.polygon}
+                                    positions={area.polygon.map((p: any) => [p[1], p[0]])}
                                     pathOptions={{
                                         color: areaColor,
                                         weight: 4,
@@ -262,8 +306,8 @@ export default function MapComponent() {
 
             {/* Floating Control Panel */}
             <ControlPanel
-                toggles={{ showSales, showBlueZones, showDominion, showIncome, showRace, showRankings }}
-                setters={{ setShowSales, setShowBlueZones, setShowDominion, setShowIncome, setShowRace, setShowRankings }}
+                toggles={{ showSales, salesFilter, showBlueZones, showDominion, showIncome, showRace, showRankings }}
+                setters={{ setShowSales, setSalesFilter, setShowBlueZones, setShowDominion, setShowIncome, setShowRace, setShowRankings }}
             />
         </div>
     );

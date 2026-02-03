@@ -3,6 +3,7 @@ import { Layers, Users, DollarSign, Home, Zap, Activity } from 'lucide-react';
 interface ControlPanelProps {
     toggles: {
         showSales: boolean;
+        salesFilter: string; // 'all', 'recent', 'older'
         showBlueZones: boolean;
         showDominion: boolean;
         showIncome: boolean;
@@ -11,6 +12,7 @@ interface ControlPanelProps {
     };
     setters: {
         setShowSales: (v: boolean) => void;
+        setSalesFilter: (v: string) => void;
         setShowBlueZones: (v: boolean) => void;
         setShowDominion: (v: boolean) => void;
         setShowIncome: (v: boolean) => void;
@@ -42,12 +44,33 @@ export default function ControlPanel({ toggles, setters }: ControlPanelProps) {
                             active={toggles.showRankings}
                             onClick={() => setters.setShowRankings(!toggles.showRankings)}
                         />
-                        <Toggle
-                            label="Customer Sales"
-                            icon={<DollarSign className="w-4 h-4 text-green-400" />}
-                            active={toggles.showSales}
-                            onClick={() => setters.setShowSales(!toggles.showSales)}
-                        />
+
+                        <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                            <Toggle
+                                label="Customer Sales"
+                                icon={<DollarSign className="w-4 h-4 text-green-400" />}
+                                active={toggles.showSales}
+                                onClick={() => setters.setShowSales(!toggles.showSales)}
+                            />
+
+                            {/* Manager Filter: Recency */}
+                            {toggles.showSales && (
+                                <div className="mt-2 pl-8 pr-2">
+                                    <label className="text-[10px] uppercase text-slate-500 font-bold mb-1 block">
+                                        Sales Recency (Manager View)
+                                    </label>
+                                    <select
+                                        className="w-full bg-slate-900 border border-slate-600 rounded text-xs py-1 px-2 text-slate-300 focus:border-indigo-500 outline-none"
+                                        value={toggles.salesFilter}
+                                        onChange={(e) => setters.setSalesFilter(e.target.value)}
+                                    >
+                                        <option value="all">Show All History</option>
+                                        <option value="recent">Recent (&lt; 1 Year)</option>
+                                        <option value="older">Ripe for Re-Canvass (&gt; 1 Year)</option>
+                                    </select>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
