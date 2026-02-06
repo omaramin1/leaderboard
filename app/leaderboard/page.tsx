@@ -28,7 +28,10 @@ export default function LeaderboardPage() {
                                 <tr className="bg-gray-700">
                                     <th className="p-4 font-semibold text-gray-300">Rank</th>
                                     <th className="p-4 font-semibold text-gray-300">Representative</th>
-                                    <th className="p-4 font-semibold text-gray-300 text-right">Deals Closed</th>
+                                    <th className="p-4 font-semibold text-gray-300 text-right">
+                                        Deals Closed<br />
+                                        <span className="text-xs text-gray-400 font-normal">(TPV Complete & Sent)</span>
+                                    </th>
                                     <th className="p-4 font-semibold text-gray-300 text-right">Total Score</th>
                                 </tr>
                             </thead>
