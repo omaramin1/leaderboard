@@ -1,31 +1,24 @@
 [
     {
+        "id": "ENM087",
+        "name": "Marquayous Hill",
+        "daily": 0,
+        "weekly": 4,
+        "monthly": 13
+    },
+    {
+        "id": "ENM112",
+        "name": "Markell Hill",
+        "daily": 0,
+        "weekly": 2,
+        "monthly": 7
+    },
+    {
         "id": "ENM014",
         "name": "Derrick Greene Jr",
         "daily": 0,
         "weekly": 2,
-        "monthly": 6
-    },
-    {
-        "id": "ENM019",
-        "name": "Carli Wittkowski",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 4
-    },
-    {
-        "id": "ENM034",
-        "name": "Nicholas Fuoco",
-        "daily": 0,
-        "weekly": 2,
         "monthly": 5
-    },
-    {
-        "id": "ENM059",
-        "name": "Destiny Paige",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 3
     },
     {
         "id": "ENM061",
@@ -35,18 +28,53 @@
         "monthly": 5
     },
     {
-        "id": "ENM068",
-        "name": "Logan Wilcox",
+        "id": "ENM034",
+        "name": "Nicholas Fuoco",
         "daily": 0,
-        "weekly": 0,
-        "monthly": 0
+        "weekly": 1,
+        "monthly": 3
     },
     {
-        "id": "ENM070",
-        "name": "Tommy DeSocio",
+        "id": "ENM088",
+        "name": "Lejohn Windn",
         "daily": 0,
-        "weekly": 0,
-        "monthly": 0
+        "weekly": 1,
+        "monthly": 3
+    },
+    {
+        "id": "ENM111",
+        "name": "Kiley Eastin",
+        "daily": 0,
+        "weekly": 1,
+        "monthly": 3
+    },
+    {
+        "id": "ENM082",
+        "name": "Adnaan Ali",
+        "daily": 0,
+        "weekly": 1,
+        "monthly": 3
+    },
+    {
+        "id": "ENM118",
+        "name": "Brandon Sims",
+        "daily": 0,
+        "weekly": 1,
+        "monthly": 2
+    },
+    {
+        "id": "ENM104",
+        "name": "Giavanna Agostini",
+        "daily": 0,
+        "weekly": 1,
+        "monthly": 2
+    },
+    {
+        "id": "ENM059",
+        "name": "Destiny Paige",
+        "daily": 0,
+        "weekly": 1,
+        "monthly": 2
     },
     {
         "id": "ENM071",
@@ -63,95 +91,39 @@
         "monthly": 2
     },
     {
-        "id": "ENM075",
-        "name": "Jacob Berube",
-        "daily": 0,
-        "weekly": 0,
-        "monthly": 0
-    },
-    {
         "id": "ENM080",
         "name": "Shane Bush",
         "daily": 0,
         "weekly": 1,
-        "monthly": 3
-    },
-    {
-        "id": "ENM082",
-        "name": "Adnaan Ali",
-        "daily": 0,
-        "weekly": 2,
-        "monthly": 6
+        "monthly": 2
     },
     {
         "id": "ENM084",
         "name": "Christian Sawyer",
         "daily": 0,
         "weekly": 1,
-        "monthly": 4
+        "monthly": 2
+    },
+    {
+        "id": "ENM019",
+        "name": "Carli Wittkowski",
+        "daily": 0,
+        "weekly": 0,
+        "monthly": 1
     },
     {
         "id": "ENM086",
         "name": "Keiron Moore",
         "daily": 0,
-        "weekly": 1,
-        "monthly": 3
-    },
-    {
-        "id": "ENM087",
-        "name": "Marquayous Hill",
-        "daily": 0,
-        "weekly": 4,
-        "monthly": 11
-    },
-    {
-        "id": "ENM088",
-        "name": "Lejohn Windn",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 2
-    },
-    {
-        "id": "ENM089",
-        "name": "Michael Scotford",
-        "daily": 0,
         "weekly": 0,
-        "monthly": 0
+        "monthly": 1
     },
     {
         "id": "ENM090",
         "name": "Aiman Ibrahim",
         "daily": 0,
-        "weekly": 1,
-        "monthly": 2
-    },
-    {
-        "id": "ENM091",
-        "name": "Gaddiel Clayton",
-        "daily": 0,
         "weekly": 0,
         "monthly": 1
-    },
-    {
-        "id": "ENM104",
-        "name": "Giavanna Agostini",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 3
-    },
-    {
-        "id": "ENM105",
-        "name": "David Sebast",
-        "daily": 0,
-        "weekly": 0,
-        "monthly": 1
-    },
-    {
-        "id": "ENM109",
-        "name": "Nicholas Grant",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 2
     },
     {
         "id": "ENM110",
@@ -161,38 +133,10 @@
         "monthly": 1
     },
     {
-        "id": "ENM111",
-        "name": "Kiley Eastin",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 3
-    },
-    {
-        "id": "ENM112",
-        "name": "Markell Hill",
-        "daily": 0,
-        "weekly": 3,
-        "monthly": 9
-    },
-    {
-        "id": "ENM113",
-        "name": "Alexander Stewart",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 2
-    },
-    {
         "id": "ENM117",
         "name": "Jonathan Taylor",
         "daily": 0,
-        "weekly": 1,
-        "monthly": 4
-    },
-    {
-        "id": "ENM118",
-        "name": "Brandon Sims",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 3
+        "weekly": 0,
+        "monthly": 1
     }
 ]
