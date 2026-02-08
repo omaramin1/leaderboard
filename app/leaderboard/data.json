@@ -3,77 +3,84 @@
         "id": "ENM087",
         "name": "Marquayous Hill",
         "daily": 0,
-        "weekly": 4,
-        "monthly": 13
+        "weekly": 9,
+        "monthly": 9
     },
     {
         "id": "ENM112",
         "name": "Markell Hill",
         "daily": 0,
-        "weekly": 2,
+        "weekly": 7,
         "monthly": 7
-    },
-    {
-        "id": "ENM014",
-        "name": "Derrick Greene Jr",
-        "daily": 0,
-        "weekly": 2,
-        "monthly": 5
     },
     {
         "id": "ENM061",
         "name": "Cameron Ogletree",
         "daily": 0,
-        "weekly": 2,
-        "monthly": 5
+        "weekly": 6,
+        "monthly": 6
     },
     {
-        "id": "ENM034",
-        "name": "Nicholas Fuoco",
+        "id": "ENM014",
+        "name": "Derrick Greene Jr",
         "daily": 0,
-        "weekly": 1,
+        "weekly": 4,
+        "monthly": 4
+    },
+    {
+        "id": "ENM111",
+        "name": "Kiley Eastin",
+        "daily": 0,
+        "weekly": 3,
         "monthly": 3
     },
     {
         "id": "ENM088",
         "name": "Lejohn Windn",
         "daily": 0,
-        "weekly": 1,
-        "monthly": 3
-    },
-    {
-        "id": "ENM111",
-        "name": "Kiley Eastin",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 3
-    },
-    {
-        "id": "ENM082",
-        "name": "Adnaan Ali",
-        "daily": 0,
-        "weekly": 1,
+        "weekly": 3,
         "monthly": 3
     },
     {
         "id": "ENM118",
         "name": "Brandon Sims",
         "daily": 0,
-        "weekly": 1,
+        "weekly": 2,
         "monthly": 2
     },
     {
         "id": "ENM104",
         "name": "Giavanna Agostini",
         "daily": 0,
-        "weekly": 1,
+        "weekly": 2,
         "monthly": 2
     },
     {
-        "id": "ENM059",
-        "name": "Destiny Paige",
+        "id": "ENM034",
+        "name": "Nicholas Fuoco",
         "daily": 0,
-        "weekly": 1,
+        "weekly": 2,
+        "monthly": 2
+    },
+    {
+        "id": "ENM072",
+        "name": "Isabella Cutrie",
+        "daily": 0,
+        "weekly": 2,
+        "monthly": 2
+    },
+    {
+        "id": "ENM082",
+        "name": "Adnaan Ali",
+        "daily": 0,
+        "weekly": 2,
+        "monthly": 2
+    },
+    {
+        "id": "ENM080",
+        "name": "Shane Bush",
+        "daily": 0,
+        "weekly": 2,
         "monthly": 2
     },
     {
@@ -81,62 +88,55 @@
         "name": "Kirubel Motuma",
         "daily": 0,
         "weekly": 1,
-        "monthly": 2
-    },
-    {
-        "id": "ENM072",
-        "name": "Isabella Cutrie",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 2
-    },
-    {
-        "id": "ENM080",
-        "name": "Shane Bush",
-        "daily": 0,
-        "weekly": 1,
-        "monthly": 2
+        "monthly": 1
     },
     {
         "id": "ENM084",
         "name": "Christian Sawyer",
         "daily": 0,
         "weekly": 1,
-        "monthly": 2
-    },
-    {
-        "id": "ENM019",
-        "name": "Carli Wittkowski",
-        "daily": 0,
-        "weekly": 0,
         "monthly": 1
     },
     {
-        "id": "ENM086",
-        "name": "Keiron Moore",
+        "id": "ENM059",
+        "name": "Destiny Paige",
         "daily": 0,
-        "weekly": 0,
+        "weekly": 1,
         "monthly": 1
     },
     {
         "id": "ENM090",
         "name": "Aiman Ibrahim",
         "daily": 0,
-        "weekly": 0,
+        "weekly": 1,
+        "monthly": 1
+    },
+    {
+        "id": "ENM019",
+        "name": "Carli Wittkowski",
+        "daily": 0,
+        "weekly": 1,
+        "monthly": 1
+    },
+    {
+        "id": "ENM086",
+        "name": "Keiron Moore",
+        "daily": 0,
+        "weekly": 1,
         "monthly": 1
     },
     {
         "id": "ENM110",
         "name": "Ahmad Amin",
         "daily": 0,
-        "weekly": 0,
+        "weekly": 1,
         "monthly": 1
     },
     {
         "id": "ENM117",
         "name": "Jonathan Taylor",
         "daily": 0,
-        "weekly": 0,
+        "weekly": 1,
         "monthly": 1
     }
 ]
