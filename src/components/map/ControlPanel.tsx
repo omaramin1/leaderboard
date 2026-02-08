@@ -9,6 +9,9 @@ interface ControlPanelProps {
         showIncome: boolean;
         showRace: boolean;
         showRankings: boolean;
+        showConfirmed: boolean;
+        showSpeculation: boolean;
+        minKwHPotential: number;
     };
     setters: {
         setShowSales: (v: boolean) => void;
@@ -18,6 +21,9 @@ interface ControlPanelProps {
         setShowIncome: (v: boolean) => void;
         setShowRace: (v: boolean) => void;
         setShowRankings: (v: boolean) => void;
+        setShowConfirmed: (v: boolean) => void;
+        setShowSpeculation: (v: boolean) => void;
+        setMinKwHPotential: (v: number) => void;
     };
 }
 
@@ -37,6 +43,24 @@ export default function ControlPanel({ toggles, setters }: ControlPanelProps) {
                 <div>
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Targeting Analysis</h4>
                     <div className="space-y-2">
+                        {/* NEW: Smart Filter Toggles */}
+                        <div className="bg-indigo-900/30 rounded-lg p-2 border border-indigo-500/30 mb-2 space-y-2">
+                            <Toggle
+                                label="Confirmed Opportunities"
+                                subLabel="LMI / Auto-Qualify Zones"
+                                icon={<Zap className="w-4 h-4 text-amber-500" />}
+                                active={toggles.showConfirmed}
+                                onClick={() => setters.setShowConfirmed(!toggles.showConfirmed)}
+                            />
+                            <Toggle
+                                label="Speculation / Predictive"
+                                subLabel="High Benefit Score (Non-Zone)"
+                                icon={<Activity className="w-4 h-4 text-purple-500" />}
+                                active={toggles.showSpeculation}
+                                onClick={() => setters.setShowSpeculation(!toggles.showSpeculation)}
+                            />
+                        </div>
+
                         <Toggle
                             label="Ranked Clusters"
                             subLabel="Priority Zones (High Overlap/Score)"

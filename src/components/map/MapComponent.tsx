@@ -1,22 +1,17 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Polygon, GeoJSON, useMapEvents, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Polygon, GeoJSON, LayersControl, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Building, Caravan, Home } from 'lucide-react';
 import MarkerClusterGroup from './MarkerClusterGroup';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import ControlPanel from './ControlPanel';
 
-// Zoom Handler Component
-function ZoomHandler({ setZoom }: { setZoom: (z: number) => void }) {
-    useMapEvents({
-        zoomend: (e) => {
-            setZoom(e.target.getZoom());
-        }
-    });
-    return null;
-}
+
 
 // Types
 type SalesRecord = {
@@ -34,7 +29,6 @@ export default function MapComponent() {
     const [censusData, setCensusData] = useState<any>(null);
     const [rankedAreas, setRankedAreas] = useState<any[]>([]);
     const [ourDeals, setOurDeals] = useState<any[]>([]);
-    const [currentZoom, setCurrentZoom] = useState(9);
     const [salesFilter, setSalesFilter] = useState('all');
 
     // Toggles
@@ -69,36 +63,56 @@ export default function MapComponent() {
         loadData();
     }, []);
 
+    // NEW: Filter State for "Smart Targeting"
+    const [showConfirmed, setShowConfirmed] = useState(true);   // LMI / Auto-Qualify
+    const [showSpeculation, setShowSpeculation] = useState(true); // High Benefit Score
+    const [minKwHPotential, setMinKwHPotential] = useState(50); // Default threshold
+
     // Styles
-    const incomeStyle = (feature: any) => {
-        const income = feature.properties.Median_Income;
-        return {
-            fillColor: income > 100000 ? '#006d2c' : income > 75000 ? '#31a354' : income > 50000 ? '#74c476' : '#bae4b3',
-            weight: 1,
-            opacity: 1,
-            color: 'white',
-            fillOpacity: 0.6
-        };
+
+
+
+    const getEstimatedBill = (score: number) => {
+        // Higher score = likely higher usage/bill
+        if (score > 80) return '$350+';
+        if (score > 60) return '$250 - $350';
+        return '$150 - $250';
     };
 
-    const raceStyle = (feature: any) => {
-        const pctBlack = feature.properties.Pct_Black;
-        // Simple heatmap: Darker Purple = Higher % Black population
-        return {
-            fillColor: pctBlack > 0.5 ? '#4a1486' : pctBlack > 0.3 ? '#807dba' : pctBlack > 0.1 ? '#bcbddc' : '#f2f0f7',
-            weight: 1,
-            opacity: 1,
-            color: 'white',
-            fillOpacity: 0.6
-        };
+    const getHeatingType = (score: number) => {
+        // High score often correlates with electric resistance in this model
+        if (score > 70) return 'Electric Resistance';
+        if (score > 50) return 'Heat Pump / Mix';
+        return 'Gas / Other';
     };
 
-    const blueZoneStyle = {
-        fillColor: '#3b82f6',
-        weight: 3,
-        opacity: 1,
-        color: '#2563eb',
-        fillOpacity: 0
+    // Housing Type Inference
+    const inferHousingType = (size: number) => {
+        if (size > 300) return 'Apartment Complex';
+        if (size > 150) return 'Trailer Park / Dense';
+        return 'Neighborhood';
+    };
+
+    const getHousingIcon = (type: string, color: string) => {
+        const size = 16;
+        if (type === 'Apartment Complex') return <Building size={size} color={color} fill="white" />;
+        if (type.includes('Trailer')) return <Caravan size={size} color={color} fill="white" />;
+        return <Home size={size} color={color} fill="white" />;
+    };
+
+    const createCustomIcon = (type: string, color: string) => {
+        const iconMarkup = renderToStaticMarkup(
+            <div className="flex items-center justify-center bg-white rounded-full p-1 shadow-md border-2" style={{ borderColor: color }}>
+                {getHousingIcon(type, color)}
+            </div>
+        );
+        return L.divIcon({
+            html: iconMarkup,
+            className: 'custom-marker-icon',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+            popupAnchor: [0, -14]
+        });
     };
 
     // Filter Logic
@@ -121,13 +135,45 @@ export default function MapComponent() {
         });
     }, [salesData, salesFilter]);
 
+    // Styles
+    const incomeStyle = (feature: { properties: { Median_Income: number } } | undefined) => {
+        const income = feature?.properties.Median_Income;
+        return {
+            fillColor: income && income > 100000 ? '#006d2c' : income && income > 75000 ? '#31a354' : income && income > 50000 ? '#74c476' : '#bae4b3',
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            fillOpacity: 0.6
+        };
+    };
+
+    const raceStyle = (feature: { properties: { Pct_Black: number } } | undefined) => {
+        const pctBlack = feature?.properties.Pct_Black;
+        // Simple heatmap: Darker Purple = Higher % Black population
+        return {
+            fillColor: pctBlack && pctBlack > 0.5 ? '#4a1486' : pctBlack && pctBlack > 0.3 ? '#807dba' : pctBlack && pctBlack > 0.1 ? '#bcbddc' : '#f2f0f7',
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            fillOpacity: 0.6
+        };
+    };
+
+    const blueZoneStyle = {
+        fillColor: '#3b82f6',
+        weight: 3,
+        opacity: 1,
+        color: '#2563eb',
+        fillOpacity: 0
+    };
+
     // Dominion Placeholder (Richmond area box)
     const dominionPoly = [
         [37.4, -77.6], [37.7, -77.6], [37.7, -77.3], [37.4, -77.3]
     ];
 
     return (
-        <div className="relative w-full h-screen">
+        <div className="relative w-full h-screen" >
             <MapContainer
                 center={[37.54, -77.43]}
                 zoom={9}
@@ -157,8 +203,6 @@ export default function MapComponent() {
                     </LayersControl.BaseLayer>
                 </LayersControl>
 
-
-                <ZoomHandler setZoom={setCurrentZoom} />
 
                 {/* Dominion Layer */}
                 {showDominion && (
@@ -227,16 +271,29 @@ export default function MapComponent() {
                 ), [showSales, ourDeals])}
 
                 {/* Ranked Area Pins */}
-                {showRankings && rankedAreas.filter(area => area.in_zone || (area.benefit_likelihood >= 0.4)).map((area, idx) => {
-                    const isTier2 = !area.in_zone;
-                    const areaColor = isTier2 ? '#ca8a04' : '#7c3aed'; // Yellow-600 for Tier 2, Violet-600 for Tier 1
+                {showRankings && rankedAreas.map((area, idx) => {
+                    // Classification
+                    const isConfirmed = area.in_zone; // Auto-Qualify / LMI
+                    const isSpeculation = !isConfirmed && (area.score >= minKwHPotential || area.benefit_likelihood >= 0.5);
+
+                    // Filtering
+                    if (isConfirmed && !showConfirmed) return null;
+                    if (isSpeculation && !showSpeculation) return null;
+                    if (!isConfirmed && !isSpeculation) return null; // Low value area
+
+                    // Styling
+                    // Confirmed = Gold/Emerald (Solid)
+                    // Speculation = Purple (Predictive)
+                    const areaColor = isConfirmed ? '#d97706' : '#7c3aed'; // Amber-600 vs Violet-600
+                    const housingType = inferHousingType(area.size);
+                    const customIcon = createCustomIcon(housingType, areaColor);
 
                     return (
                         <div key={`rank-${idx}`}>
                             {/* Territory Polygon - OUTLINE focused */}
                             {area.polygon && (
                                 <Polygon
-                                    positions={area.polygon.map((p: any) => [p[1], p[0]])}
+                                    positions={area.polygon.map((p: number[]) => [p[1], p[0]])}
                                     pathOptions={{
                                         color: areaColor,
                                         weight: 4,
@@ -246,58 +303,83 @@ export default function MapComponent() {
                                         dashArray: '5, 5'
                                     }}
                                 >
-                                    <Popup>
-                                        <div className="text-slate-900 min-w-[200px]">
-                                            <h3 className="font-bold text-lg border-b pb-1 mb-2">Rank #{area.rank}</h3>
-
-                                            {/* kWh Potential Badge */}
-                                            <div className="mb-3 p-2 bg-gradient-to-r from-slate-100 to-slate-200 rounded">
-                                                <p className="text-xs font-bold text-slate-500 uppercase">Est. kWh Potential</p>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`text-xl font-bold ${area.score >= 80 ? 'text-emerald-600' : area.score >= 50 ? 'text-amber-600' : 'text-slate-600'}`}>
-                                                        {area.score >= 80 ? 'HIGH' : area.score >= 50 ? 'MODERATE' : 'LOW'}
-                                                    </span>
-                                                    <span className="text-xs text-slate-500">({area.score}/100)</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="text-sm space-y-1">
-                                                <div className={`px-2 py-1 rounded text-white text-center font-bold mb-2 ${area.in_zone ? 'bg-emerald-600' : 'bg-amber-500'}`}>
-                                                    {area.in_zone ? 'AUTO-QUALIFY ZONE' : `Likely Qualify (${Math.round(area.benefit_likelihood * 100)}%)`}
-                                                </div>
-
-                                                {/* Demographics Grid */}
-                                                {area.demographics && (
-                                                    <div className="grid grid-cols-2 gap-2 my-2 text-xs">
-                                                        <div className="bg-slate-50 p-1 rounded">
-                                                            <span className="text-slate-400">Avg Age</span>
-                                                            <div className="font-medium text-slate-700">{area.demographics.age} yrs</div>
-                                                        </div>
-                                                        <div className="bg-slate-50 p-1 rounded">
-                                                            <span className="text-slate-400">HH Size</span>
-                                                            <div className="font-medium text-slate-700">{area.demographics.hh_size} ppl</div>
-                                                        </div>
+                                    <Popup minWidth={280}>
+                                        <div className="text-slate-900">
+                                            <div className="flex flex-col border-b pb-2 mb-2">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <div>
+                                                        <h3 className="font-bold text-lg leading-tight">Rank #{area.rank}</h3>
+                                                        <span className="text-[10px] text-slate-500">{area.tract}</span>
                                                     </div>
-                                                )}
-
-                                                <p><strong>Saturation:</strong> {area.size} Homes</p>
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold text-white ${isConfirmed ? 'bg-amber-600' : 'bg-purple-600'}`}>
+                                                        {isConfirmed ? 'CONFIRMED' : 'SPECULATION'}
+                                                    </span>
+                                                </div>
+                                                {/* Housing Type Tag */}
+                                                <div className="flex items-center gap-1 text-xs font-bold text-slate-600 bg-slate-100 rounded px-1.5 py-0.5 w-fit">
+                                                    {getHousingIcon(housingType, '#475569')} {/* Slate-600 */}
+                                                    <span>{housingType}</span>
+                                                </div>
                                             </div>
+
+                                            {/* Key Metrics Grid */}
+                                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                                <div className="bg-slate-100 p-2 rounded">
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Saturation</div>
+                                                    <div className="text-sm font-bold text-slate-800">{area.size} Homes</div>
+                                                </div>
+                                                <div className="bg-slate-100 p-2 rounded">
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Est. Bill</div>
+                                                    <div className="text-sm font-bold text-emerald-700">{getEstimatedBill(area.score)}</div>
+                                                </div>
+                                                <div className="bg-slate-100 p-2 rounded">
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Heating</div>
+                                                    <div className="text-sm font-bold text-slate-800">{getHeatingType(area.score)}</div>
+                                                </div>
+                                                <div className="bg-slate-100 p-2 rounded">
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Med. Income</div>
+                                                    <div className="text-sm font-bold text-slate-800">
+                                                        {/* Placeholder - mapping specific income would require joining census data */}
+                                                        {isConfirmed ? '< $60k' : '$60k - $90k'}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Benefit Score Bar */}
+                                            <div className="mb-3">
+                                                <div className="flex justify-between text-xs mb-1">
+                                                    <span className="font-bold text-slate-600">Benefit Score</span>
+                                                    <span className="font-bold text-emerald-600">{area.score}/100</span>
+                                                </div>
+                                                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="bg-emerald-500 h-full"
+                                                        style={{ width: `${Math.min(area.score, 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Demographics Footer */}
+                                            {area.demographics && (
+                                                <div className="pt-2 border-t flex justify-between text-xs text-slate-500">
+                                                    <span>Avg Age: <strong className="text-slate-700">{area.demographics.age}</strong></span>
+                                                    <span>HH Size: <strong className="text-slate-700">{area.demographics.hh_size}</strong></span>
+                                                    <span>Black: <strong className="text-slate-700">{area.demographics.pct_black}%</strong></span>
+                                                </div>
+                                            )}
                                         </div>
                                     </Popup>
                                 </Polygon>
                             )}
 
-                            {/* Center Marker (Optional, mostly for low zooms) */}
-                            <CircleMarker
-                                center={[area.lat, area.lng]}
-                                radius={4}
-                                pathOptions={{
-                                    color: areaColor,
-                                    fillColor: '#fff',
-                                    fillOpacity: 1,
-                                    weight: 2
-                                }}
-                            />
+                            {/* Center Marker with Icon */}
+                            <Marker
+                                position={[area.lat, area.lng]}
+                                icon={customIcon}
+                            >
+                                {/* Bind popup to marker as well so looking at the icon works */}
+                                <Popup>Rank #{area.rank} - {housingType}</Popup>
+                            </Marker>
                         </div>
                     );
                 })}
@@ -306,9 +388,16 @@ export default function MapComponent() {
 
             {/* Floating Control Panel */}
             <ControlPanel
-                toggles={{ showSales, salesFilter, showBlueZones, showDominion, showIncome, showRace, showRankings }}
-                setters={{ setShowSales, setSalesFilter, setShowBlueZones, setShowDominion, setShowIncome, setShowRace, setShowRankings }}
+                toggles={{
+                    showSales, salesFilter, showBlueZones, showDominion, showIncome, showRace, showRankings,
+                    showConfirmed, showSpeculation, minKwHPotential
+                }}
+                setters={{
+                    setShowSales, setSalesFilter, setShowBlueZones, setShowDominion, setShowIncome, setShowRace, setShowRankings,
+                    setShowConfirmed, setShowSpeculation, setMinKwHPotential
+                }
+                }
             />
-        </div>
+        </div >
     );
 }
