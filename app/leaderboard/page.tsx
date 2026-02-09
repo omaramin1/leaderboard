@@ -38,6 +38,10 @@ export default function LeaderboardPage() {
         <div className="min-h-screen bg-black text-white p-4 md:p-8 font-sans selection:bg-gold selection:text-black">
             <div className="max-w-4xl mx-auto">
                 <header className="mb-12 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        <span className="text-3xl">⚡</span>
+                        <span className="text-sm font-bold tracking-widest text-gray-500 uppercase">EMG Field Ops</span>
+                    </div>
                     <h1 className="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 drop-shadow-sm">
                         ELITE SALES
                     </h1>

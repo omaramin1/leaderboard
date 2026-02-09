@@ -1,0 +1,159 @@
+{
+    "name": "Leaderboard Auto-Update",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "hours",
+                            "hoursInterval": 1
+                        }
+                    ]
+                }
+            },
+            "id": "schedule-trigger",
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                120,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://portal.viprweb.com/api/sales-orders",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "httpBasicAuth",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "json"
+                        }
+                    }
+                }
+            },
+            "id": "fetch-viper-data",
+            "name": "Fetch Viper Data",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                340,
+                300
+            ],
+            "credentials": {
+                "httpBasicAuth": {
+                    "id": "viper-creds",
+                    "name": "Viper Portal"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// Filter for Complete TPV and Sent Order Status\nconst deals = $input.all();\nconst counts = {};\n\ndeals.forEach(deal => {\n  const data = deal.json;\n  if (data.tpv_status === 'Complete' && data.order_status === 'Sent') {\n    const key = `${data.rep_id}|${data.rep_name}`;\n    counts[key] = (counts[key] || 0) + 1;\n  }\n});\n\n// Convert to array format for data.json\nconst result = Object.entries(counts).map(([key, monthly]) => {\n  const [id, name] = key.split('|');\n  return { id, name, daily: 0, weekly: 0, monthly };\n});\n\n// Sort by monthly count descending\nresult.sort((a, b) => b.monthly - a.monthly);\n\nreturn [{ json: { leaderboard: result } }];"
+            },
+            "id": "process-data",
+            "name": "Process Data",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                560,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://api.github.com/repos/omaramin1/leaderboard/contents/app/leaderboard/data.json",
+                "method": "PUT",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "githubApi",
+                "body": "={{ JSON.stringify({ message: 'Auto-update leaderboard data', content: Buffer.from(JSON.stringify($json.leaderboard, null, 4)).toString('base64'), sha: 'GET_CURRENT_SHA_FIRST' }) }}",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "json"
+                        }
+                    }
+                }
+            },
+            "id": "update-github",
+            "name": "Update GitHub",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                780,
+                300
+            ],
+            "credentials": {
+                "githubApi": {
+                    "id": "github-creds",
+                    "name": "GitHub Token"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "https://api.vercel.com/v1/integrations/deploy/prj_XXXXX",
+                "method": "POST"
+            },
+            "id": "trigger-vercel-deploy",
+            "name": "Trigger Vercel Deploy",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1000,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Fetch Viper Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Fetch Viper Data": {
+            "main": [
+                [
+                    {
+                        "node": "Process Data",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Process Data": {
+            "main": [
+                [
+                    {
+                        "node": "Update GitHub",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Update GitHub": {
+            "main": [
+                [
+                    {
+                        "node": "Trigger Vercel Deploy",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}
