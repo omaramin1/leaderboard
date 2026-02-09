@@ -23,13 +23,39 @@ type SalesRecord = {
     Sale_Date: string;
 };
 
+interface RankedArea {
+    id: number;
+    lat: number;
+    lng: number;
+    polygon: number[][];
+    size: number;
+    in_zone: boolean;
+    score: number;
+    kwh_potential_raw: number;
+    demographics: {
+        age: number;
+        hh_size: number;
+        pct_black: number;
+    };
+    tract: string;
+    benefit_likelihood: number;
+    rank: number;
+    description: string;
+    benefit_score?: number; // Optional as it might be same as score
+    snap_rate?: number;
+    medicaid_rate?: number;
+}
+
 export default function MapComponent() {
     const [salesData, setSalesData] = useState<SalesRecord[]>([]);
     const [blueZones, setBlueZones] = useState<any>(null);
     const [censusData, setCensusData] = useState<any>(null);
-    const [rankedAreas, setRankedAreas] = useState<any[]>([]);
+    const [rankedAreas, setRankedAreas] = useState<RankedArea[]>([]);
     const [ourDeals, setOurDeals] = useState<any[]>([]);
     const [salesFilter, setSalesFilter] = useState('all');
+
+    // NEW: Selected Zone State
+    const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
 
     // Toggles
     const [showSales, setShowSales] = useState(true);
@@ -117,12 +143,47 @@ export default function MapComponent() {
 
     // Filter Logic
     const filteredSales = useMemo(() => {
-        if (salesFilter === 'all') return salesData;
+        // If no zone is selected, DO NOT show the massive list of sales pins to prevent crash
+        if (!selectedZoneId && salesFilter !== 'force_all') return [];
+
+        let currentData = salesData;
+
+        // 1. Filter by selected Zone (Geo-spatial check simplified logic: we assume sales are tagged or we check bounds)
+        // Since we don't have a 'zone_id' on sales records, we will use a simple lat/lng bounds check against the selected zone
+        if (selectedZoneId) {
+            const selectedZone = rankedAreas.find(r => r.id === selectedZoneId);
+            if (selectedZone && selectedZone.polygon) {
+                // Rough bounds check implementation
+                // Find min/max lat/lng of the polygon
+                let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+                selectedZone.polygon.forEach((p: number[]) => {
+                    // Polygon format in JSON is [lng, lat]
+                    const lng = p[0];
+                    const lat = p[1];
+                    minLat = Math.min(minLat, lat);
+                    maxLat = Math.max(maxLat, lat);
+                    minLng = Math.min(minLng, lng);
+                    maxLng = Math.max(maxLng, lng);
+                });
+
+                // Add a small buffer (approx 100m) 
+                const buffer = 0.001;
+                minLat -= buffer; maxLat += buffer;
+                minLng -= buffer; maxLng += buffer;
+
+                currentData = currentData.filter(sale =>
+                    sale.Latitude >= minLat && sale.Latitude <= maxLat &&
+                    sale.Longitude >= minLng && sale.Longitude <= maxLng
+                );
+            }
+        }
+
+        if (salesFilter === 'all') return currentData;
 
         const cutoffDate = new Date();
         cutoffDate.setFullYear(cutoffDate.getFullYear() - 1);
 
-        return salesData.filter(sale => {
+        return currentData.filter(sale => {
             if (!sale.Sale_Date) return false;
             const saleDate = new Date(sale.Sale_Date);
             if (isNaN(saleDate.getTime())) return false; // Invalid date
@@ -133,7 +194,7 @@ export default function MapComponent() {
                 return saleDate < cutoffDate;
             }
         });
-    }, [salesData, salesFilter]);
+    }, [salesData, salesFilter, selectedZoneId, rankedAreas]);
 
     // Styles
     const incomeStyle = (feature: { properties: { Median_Income: number } } | undefined) => {
@@ -287,6 +348,7 @@ export default function MapComponent() {
                     const areaColor = isConfirmed ? '#d97706' : '#7c3aed'; // Amber-600 vs Violet-600
                     const housingType = inferHousingType(area.size);
                     const customIcon = createCustomIcon(housingType, areaColor);
+                    const isSelected = selectedZoneId === area.id;
 
                     return (
                         <div key={`rank-${idx}`}>
@@ -294,13 +356,22 @@ export default function MapComponent() {
                             {area.polygon && (
                                 <Polygon
                                     positions={area.polygon.map((p: number[]) => [p[1], p[0]])}
+                                    eventHandlers={{
+                                        click: (e) => {
+                                            if (selectedZoneId === area.id) {
+                                                setSelectedZoneId(null); // Deselect
+                                            } else {
+                                                setSelectedZoneId(area.id); // Select
+                                            }
+                                        }
+                                    }}
                                     pathOptions={{
-                                        color: areaColor,
-                                        weight: 4,
+                                        color: isSelected ? '#ffffff' : areaColor, // Highlight selected with white border
+                                        weight: isSelected ? 4 : 2,
                                         opacity: 1,
                                         fillColor: areaColor,
-                                        fillOpacity: 0.15,
-                                        dashArray: '5, 5'
+                                        fillOpacity: isSelected ? 0.35 : 0.15, // Darker fill when selected
+                                        dashArray: isSelected ? '0' : '5, 5'
                                     }}
                                 >
                                     <Popup minWidth={280}>
@@ -320,6 +391,18 @@ export default function MapComponent() {
                                                     {getHousingIcon(housingType, '#475569')} {/* Slate-600 */}
                                                     <span>{housingType}</span>
                                                 </div>
+                                                <div className="mt-1">
+                                                    <button
+                                                        className={`text-[10px] px-2 py-1 rounded font-bold uppercase transition-colors ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent popup close? No, let standard map click handle it, but here we can force state
+                                                            if (selectedZoneId !== area.id) setSelectedZoneId(area.id);
+                                                            else setSelectedZoneId(null);
+                                                        }}
+                                                    >
+                                                        {isSelected ? 'Zone Selected (Showing Pins)' : 'Click Area to Load Data'}
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Key Metrics Grid */}
@@ -333,14 +416,26 @@ export default function MapComponent() {
                                                     <div className="text-sm font-bold text-emerald-700">{getEstimatedBill(area.score)}</div>
                                                 </div>
                                                 <div className="bg-slate-100 p-2 rounded">
-                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Heating</div>
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Heating Prediction</div>
                                                     <div className="text-sm font-bold text-slate-800">{getHeatingType(area.score)}</div>
                                                 </div>
                                                 <div className="bg-slate-100 p-2 rounded">
                                                     <div className="text-[10px] text-slate-500 uppercase font-bold">Med. Income</div>
                                                     <div className="text-sm font-bold text-slate-800">
                                                         {/* Placeholder - mapping specific income would require joining census data */}
-                                                        {isConfirmed ? '< $60k' : '$60k - $90k'}
+                                                        {isConfirmed ? '< $60k (LMI)' : '$60k - $90k'}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-slate-100 p-2 rounded">
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">Benefits Prob.</div>
+                                                    <div className="text-sm font-bold text-purple-700">
+                                                        {(area.benefit_likelihood * 100).toFixed(0)}%
+                                                    </div>
+                                                </div>
+                                                <div className="bg-slate-100 p-2 rounded">
+                                                    <div className="text-[10px] text-slate-500 uppercase font-bold">kWh Expected</div>
+                                                    <div className="text-sm font-bold text-blue-700">
+                                                        {area.kwh_potential_raw ? area.kwh_potential_raw.toFixed(1) : '—'} kWh/d
                                                     </div>
                                                 </div>
                                             </div>
@@ -376,6 +471,15 @@ export default function MapComponent() {
                             <Marker
                                 position={[area.lat, area.lng]}
                                 icon={customIcon}
+                                eventHandlers={{
+                                    click: () => {
+                                        if (selectedZoneId === area.id) {
+                                            setSelectedZoneId(null);
+                                        } else {
+                                            setSelectedZoneId(area.id);
+                                        }
+                                    }
+                                }}
                             >
                                 {/* Bind popup to marker as well so looking at the icon works */}
                                 <Popup>Rank #{area.rank} - {housingType}</Popup>
