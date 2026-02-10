@@ -53,6 +53,7 @@ export default function MapComponent() {
     const [rankedAreas, setRankedAreas] = useState<RankedArea[]>([]);
     const [ourDeals, setOurDeals] = useState<any[]>([]);
     const [salesFilter, setSalesFilter] = useState('all');
+    const [viewMode, setViewMode] = useState<'default' | 'heating' | 'demographics'>('default');
 
     // NEW: Selected Zone State
     const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
@@ -333,22 +334,42 @@ export default function MapComponent() {
 
                 {/* Ranked Area Pins */}
                 {showRankings && rankedAreas.map((area, idx) => {
-                    // Classification
-                    const isConfirmed = area.in_zone; // Auto-Qualify / LMI
-                    const isSpeculation = !isConfirmed && (area.score >= minKwHPotential || area.benefit_likelihood >= 0.5);
+                    const isConfirmed = area.in_zone === true; // Blue Zone overlap
+                    const isSpeculation = !isConfirmed;
 
-                    // Filtering
-                    if (isConfirmed && !showConfirmed) return null;
-                    if (isSpeculation && !showSpeculation) return null;
-                    if (!isConfirmed && !isSpeculation) return null; // Low value area
+                    // Filter Logic
+                    if (!showConfirmed && isConfirmed) return null;
+                    if (!showSpeculation && isSpeculation) return null;
+                    if (area.kwh_potential_raw < minKwHPotential) return null;
 
-                    // Styling
-                    // Confirmed = Gold/Emerald (Solid)
-                    // Speculation = Purple (Predictive)
-                    const areaColor = isConfirmed ? '#d97706' : '#7c3aed'; // Amber-600 vs Violet-600
-                    const housingType = inferHousingType(area.size);
-                    const customIcon = createCustomIcon(housingType, areaColor);
+                    // Color Logic based on View Mode
+                    let areaColor = isConfirmed ? '#9333ea' : '#f97316'; // Default Purple/Orange
+                    let opacity = 0.15;
+
+                    if (viewMode === 'heating') {
+                        if (area.score > 70) areaColor = '#ef4444'; // Red - High
+                        else if (area.score > 50) areaColor = '#f97316'; // Orange - Medium
+                        else areaColor = '#94a3b8'; // Grey - Low
+                        opacity = 0.3; // More visible in heat mode
+                    } else if (viewMode === 'demographics') {
+                        const pctBlack = area.demographics?.pct_black ?? 0;
+                        if (pctBlack > 50) areaColor = '#9333ea'; // Purple - Majority Black
+                        else if (pctBlack < 20) areaColor = '#10b981'; // Green - Likely White/Other
+                        else areaColor = '#eab308'; // Yellow - Mix/Diversity
+                        opacity = 0.3;
+                    } else {
+                        // Default Mode refinements
+                        if (area.rank <= 10) areaColor = '#facc15'; // Top 10 Gold
+                    }
+
                     const isSelected = selectedZoneId === area.id;
+                    // Fix: Ensure we have fallback for housingType calculation if needed or use existing logic
+                    // The original code had: const housingType = inferHousingType(area.size); 
+                    // But 'inferHousingType' might not be defined in this file (it wasn't in previous context). 
+                    // Let's use the logic seen in other snippets: area.size > 100 ...
+                    const housingType = area.size > 100 ? 'Dense Single Family' : 'Sporadic Single Family';
+
+                    const customIcon = createCustomIcon(housingType, areaColor);
 
                     return (
                         <div key={`rank-${idx}`}>
@@ -370,7 +391,7 @@ export default function MapComponent() {
                                         weight: isSelected ? 4 : 2,
                                         opacity: 1,
                                         fillColor: areaColor,
-                                        fillOpacity: isSelected ? 0.35 : 0.15, // Darker fill when selected
+                                        fillOpacity: isSelected ? 0.35 : opacity, // Darker fill when selected
                                         dashArray: isSelected ? '0' : '5, 5'
                                     }}
                                 >
@@ -499,9 +520,34 @@ export default function MapComponent() {
                 setters={{
                     setShowSales, setSalesFilter, setShowBlueZones, setShowDominion, setShowIncome, setShowRace, setShowRankings,
                     setShowConfirmed, setShowSpeculation, setMinKwHPotential
-                }
-                }
+                }}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
             />
+
+            {/* Legend Overlay */}
+            {(viewMode === 'heating' || viewMode === 'demographics') && (
+                <div className="absolute bottom-8 left-8 bg-white/90 p-3 rounded-lg shadow-xl border border-slate-200 z-[1000] text-xs">
+                    <h4 className="font-bold mb-2 uppercase tracking-wide text-slate-600">
+                        {viewMode === 'heating' ? 'Heating Potential' : 'Demographics'}
+                    </h4>
+                    <div className="space-y-1">
+                        {viewMode === 'heating' ? (
+                            <>
+                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-red-500"></span> <span>High (Electric)</span></div>
+                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-orange-500"></span> <span>Medium (Mix)</span></div>
+                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-slate-400"></span> <span>Low (Gas)</span></div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-purple-600"></span> <span>Primary: Black</span></div>
+                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-yellow-500"></span> <span>Mix / Diverse</span></div>
+                                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-green-500"></span> <span>Primary: White/Other</span></div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

@@ -1,6 +1,10 @@
 import { Layers, Users, DollarSign, Home, Zap, Activity } from 'lucide-react';
 
+// ... imports remain the same
+
 interface ControlPanelProps {
+    viewMode: 'default' | 'heating' | 'demographics';
+    setViewMode: (m: 'default' | 'heating' | 'demographics') => void;
     toggles: {
         showSales: boolean;
         salesFilter: string; // 'all', 'recent', 'older'
@@ -27,9 +31,7 @@ interface ControlPanelProps {
     };
 }
 
-// ... imports remain the same
-
-export default function ControlPanel({ toggles, setters }: ControlPanelProps) {
+export default function ControlPanel({ toggles, setters, viewMode, setViewMode }: ControlPanelProps) {
     return (
         <div className="absolute top-4 right-4 bg-slate-900/95 backdrop-blur-md p-4 rounded-xl border border-slate-700 shadow-2xl z-[1000] w-80 text-white">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2 border-b border-slate-700 pb-2">
@@ -41,6 +43,38 @@ export default function ControlPanel({ toggles, setters }: ControlPanelProps) {
 
                 {/* Section 1: Analysis & Targeting */}
                 <div>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">View Mode</h4>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                        <button
+                            onClick={() => setViewMode('default')}
+                            className={`p-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'default'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                }`}
+                        >
+                            Default
+                        </button>
+                        <button
+                            onClick={() => setViewMode('heating')}
+                            className={`p-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${viewMode === 'heating'
+                                    ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/50'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                }`}
+                        >
+                            <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                            Heat
+                        </button>
+                        <button
+                            onClick={() => setViewMode('demographics')}
+                            className={`p-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'demographics'
+                                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50'
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                                }`}
+                        >
+                            Demo
+                        </button>
+                    </div>
+
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Targeting Analysis</h4>
                     <div className="space-y-2">
                         {/* NEW: Smart Filter Toggles */}
